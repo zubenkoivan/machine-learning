@@ -12,7 +12,7 @@ def bias_variable(shape):
     return tf.Variable(initial_value)
 
 
-mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+mnist = input_data.read_data_sets("MNIST_data_set/", one_hot=True)
 
 X = tf.placeholder(tf.float32, [None, 784])
 Y = tf.placeholder(tf.float32, [None, 10])
