@@ -176,7 +176,14 @@ class FullyConnectedNet(object):
         # beta2, etc. Scale parameters should be initialized to one and shift      #
         # parameters should be initialized to zero.                                #
         ############################################################################
-        pass
+        dims = list(hidden_dims)
+        dims.insert(0, input_dim)
+        dims.append(num_classes)
+        for layer in range(1, self.num_layers + 1):
+            w_shape = (dims[layer - 1], dims[layer])
+            scale = np.sqrt(2 / (w_shape[0] * w_shape[1]))
+            self.params['W' + str(layer)] = scale * np.random.randn(*w_shape)
+            self.params['b' + str(layer)] = np.zeros(dims[layer])
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -234,7 +241,15 @@ class FullyConnectedNet(object):
         # self.bn_params[1] to the forward pass for the second batch normalization #
         # layer, etc.                                                              #
         ############################################################################
-        pass
+        cache = []
+        prev_layer_out = X
+        for layer in range(1, self.num_layers + 1):
+            out, out_cache = affine_relu_forward(prev_layer_out,
+                                                 self.params['W' + str(layer)],
+                                                 self.params['b' + str(layer)])
+            prev_layer_out = out
+            cache.append(out_cache)
+        scores = prev_layer_out
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -257,7 +272,17 @@ class FullyConnectedNet(object):
         # automated tests, make sure that your L2 regularization includes a factor #
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
-        pass
+        w_params_reg = [np.sum(np.square(value))
+                        for key, value in self.params.items()
+                        if key.startswith('W')]
+        loss, dlayer_out = softmax_loss(scores, y)
+        loss += self.reg * 0.5 * np.sum(w_params_reg)
+
+        for layer in range(self.num_layers, 0, -1):
+            dx, dw, db = affine_relu_backward(dlayer_out, cache.pop())
+            grads['W' + str(layer)] = dw + self.reg * self.params['W' + str(layer)]
+            grads['b' + str(layer)] = db
+            dlayer_out = dx
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
