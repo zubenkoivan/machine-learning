@@ -273,7 +273,6 @@ class FullyConnectedNet(object):
         reg_loss = [np.sum(np.square(value))
                     for key, value in self.params.items()
                     if key.startswith('W')]
-        
         loss, dlayer_out = softmax_loss(scores, y)
         loss += self.reg * 0.5 * np.sum(reg_loss)
 

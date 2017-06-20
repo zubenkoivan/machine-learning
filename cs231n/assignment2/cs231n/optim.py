@@ -65,7 +65,9 @@ def sgd_momentum(w, dw, config=None):
     # TODO: Implement the momentum update formula. Store the updated value in #
     # the next_w variable. You should also use and update the velocity v.     #
     ###########################################################################
-    pass
+    v = config['momentum'] * v - config['learning_rate'] * dw
+    w += v
+    next_w = w
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -99,7 +101,11 @@ def rmsprop(x, dx, config=None):
     # in the next_x variable. Don't forget to update cache value stored in    #
     # config['cache'].                                                        #
     ###########################################################################
-    pass
+    decay_rate = config['decay_rate']
+    cache = decay_rate * config['cache'] + (1 - decay_rate) * dx**2
+    config['cache'] = cache
+    x -= config['learning_rate'] * dx / (np.sqrt(cache) + config['epsilon'])
+    next_x = x
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -136,7 +142,16 @@ def adam(x, dx, config=None):
     # the next_x variable. Don't forget to update the m, v, and t variables   #
     # stored in config.                                                       #
     ###########################################################################
-    pass
+    beta1 = config['beta1']
+    beta2 = config['beta2']
+    t = config['t']
+    config['m'] = beta1 * config['m'] + (1 - beta1) * dx
+    mt = config['m'] / (1 - beta1**t)
+    config['v'] = beta2 * config['v'] + (1 - beta2) * dx**2
+    vt = config['v'] / (1 - beta2**t)
+    config['t'] += 1
+    x -= config['learning_rate'] * mt / (np.sqrt(vt) + config['epsilon'])
+    next_x = x
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
