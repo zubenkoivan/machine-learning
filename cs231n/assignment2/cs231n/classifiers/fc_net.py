@@ -245,8 +245,13 @@ class FullyConnectedNet(object):
             out, out_cache = forward(prev_layer_out,
                                      self.params['W%d' % layer],
                                      self.params['b%d' % layer])
-            prev_layer_out = out
             cache.append(out_cache)
+
+            if self.use_dropout and not is_last_layer:
+                out, out_cache = dropout_forward(out, self.dropout_param)
+                cache.append(out_cache)
+
+            prev_layer_out = out
         scores = prev_layer_out        
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -278,6 +283,10 @@ class FullyConnectedNet(object):
 
         for layer in range(self.num_layers, 0, -1):
             is_last_layer = layer == self.num_layers
+
+            if self.use_dropout and not is_last_layer:
+                dlayer_out = dropout_backward(dlayer_out, cache.pop())
+
             backward = affine_backward if is_last_layer else affine_relu_backward
             dx, dw, db = backward(dlayer_out, cache.pop())
             grads['W%d' % layer] = dw + self.reg * self.params['W%d' % layer]
