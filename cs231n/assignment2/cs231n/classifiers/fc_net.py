@@ -180,6 +180,10 @@ class FullyConnectedNet(object):
             w_shape = (dims[layer - 1], dims[layer])
             self.params['W%d' % layer] = weight_scale * np.random.randn(*w_shape)
             self.params['b%d' % layer] = np.zeros(dims[layer])
+
+            if self.use_batchnorm and layer != self.num_layers:
+                self.params['gamma%d' % layer] = np.ones(dims[layer])
+                self.params['beta%d' % layer] = np.zeros(dims[layer])
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -240,14 +244,29 @@ class FullyConnectedNet(object):
         cache = []
         prev_layer_out = X
         for layer in range(1, self.num_layers + 1):
-            is_last_layer = layer == self.num_layers
-            forward = affine_forward if is_last_layer else affine_relu_forward
-            out, out_cache = forward(prev_layer_out,
-                                     self.params['W%d' % layer],
-                                     self.params['b%d' % layer])
+            is_not_last_layer = layer != self.num_layers
+
+            # affine
+            out, out_cache = affine_forward(prev_layer_out,
+                                            self.params['W%d' % layer],
+                                            self.params['b%d' % layer])
             cache.append(out_cache)
 
-            if self.use_dropout and not is_last_layer:
+            # batch norm
+            if self.use_batchnorm and is_not_last_layer:
+                out, out_cache = batchnorm_forward(out,
+                                                   self.params['gamma%d' % layer],
+                                                   self.params['beta%d' % layer],
+                                                   self.bn_params[layer - 1])
+                cache.append(out_cache)
+
+            # relu
+            if is_not_last_layer:
+                out, out_cache = relu_forward(out)
+                cache.append(out_cache)
+
+            # dropout
+            if self.use_dropout and is_not_last_layer:
                 out, out_cache = dropout_forward(out, self.dropout_param)
                 cache.append(out_cache)
 
@@ -282,16 +301,26 @@ class FullyConnectedNet(object):
         loss += self.reg * 0.5 * np.sum(reg_loss)
 
         for layer in range(self.num_layers, 0, -1):
-            is_last_layer = layer == self.num_layers
+            is_not_last_layer = layer != self.num_layers
 
-            if self.use_dropout and not is_last_layer:
+            # dropout
+            if self.use_dropout and is_not_last_layer:
                 dlayer_out = dropout_backward(dlayer_out, cache.pop())
 
-            backward = affine_backward if is_last_layer else affine_relu_backward
-            dx, dw, db = backward(dlayer_out, cache.pop())
+            # relu
+            if is_not_last_layer:
+                dlayer_out = relu_backward(dlayer_out, cache.pop())
+            
+            # batch norm
+            if self.use_batchnorm and is_not_last_layer:
+                dlayer_out, dgamma, dbeta = batchnorm_backward_alt(dlayer_out, cache.pop())
+                grads['gamma%d' % layer] = dgamma
+                grads['beta%d' % layer] = dbeta
+
+            # affine
+            dlayer_out, dw, db = affine_backward(dlayer_out, cache.pop())
             grads['W%d' % layer] = dw + self.reg * self.params['W%d' % layer]
             grads['b%d' % layer] = db
-            dlayer_out = dx
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
