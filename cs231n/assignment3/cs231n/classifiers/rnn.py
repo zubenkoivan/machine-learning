@@ -137,7 +137,8 @@ class CaptioningRNN(object):
         # defined above to store loss and gradients; grads[k] should give the      #
         # gradients for self.params[k].                                            #
         ############################################################################
-        pass
+        if self.cell_type == 'rnn':
+            pass
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
