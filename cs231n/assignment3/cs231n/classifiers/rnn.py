@@ -140,7 +140,7 @@ class CaptioningRNN(object):
         N, D = features.shape
         h0, h0_cache = temporal_affine_forward(features.reshape(N, 1, D),
                                                W_proj, b_proj)
-        _, _, H = h0.shape
+        H = h0.shape[2]
         word_vecs, word_vecs_cache = word_embedding_forward(captions_in, W_embed)
         if self.cell_type == 'rnn':
             h, h_cache = rnn_forward(word_vecs, h0.reshape(N, H), Wx, Wh, b)
@@ -220,7 +220,19 @@ class CaptioningRNN(object):
         # functions; you'll need to call rnn_step_forward or lstm_step_forward in #
         # a loop.                                                                 #
         ###########################################################################
-        pass
+        D = features.shape[1]
+        h0, _ = temporal_affine_forward(features.reshape(N, 1, D),
+                                        W_proj, b_proj)
+        H = h0.shape[2]
+        captions[:, 0] = self._start
+        for t in range(max_length):
+            word_vecs, _ = word_embedding_forward(captions[:, t].reshape(N, 1), W_embed)
+            h, _ = rnn_step_forward(word_vecs, h0, Wx, Wh, b)
+            scores, _ = temporal_affine_forward(h, W_vocab, b_vocab)
+            captions[:, t] = np.argmax(scores, axis=2)[:, 0]
+            if t + 1 < max_length:
+                captions[:, t + 1] = captions[:, t]
+            h0 = h
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
