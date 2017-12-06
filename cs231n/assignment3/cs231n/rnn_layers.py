@@ -259,7 +259,14 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
     # TODO: Implement the forward pass for a single timestep of an LSTM.        #
     # You may want to use the numerically stable sigmoid implementation above.  #
     #############################################################################
-    pass
+    H = prev_h.shape[1]
+    a = x.dot(Wx) + prev_h.dot(Wh) + b
+    input_gate = sigmoid(a[:, 0:H])
+    forget_gate = sigmoid(a[:, H:2*H])
+    output_gate = sigmoid(a[:, 2*H:3*H])
+    c_candidate = np.tanh(a[:, 3*H:4*H])
+    next_c = prev_c * forget_gate + c_candidate * input_gate
+    next_h = np.tanh(next_c) * output_gate
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
